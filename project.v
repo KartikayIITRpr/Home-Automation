@@ -76,6 +76,11 @@ module airConditioning(temperature, heater, airConditioner, humanDetector, fan_s
   input humanDetector ;
   output reg heater, airConditioner ;
   output reg [1:0] fan_speed ; 
+  initial begin
+    fan_speed = 2'b0;
+    heater = 1'b0 ;
+    airConditioner = 1'b0 ;
+  end
   always @(*) begin
     if (humanDetector) begin 
       if(temperature < 7'd74)begin
@@ -89,27 +94,24 @@ module airConditioning(temperature, heater, airConditioner, humanDetector, fan_s
       end
       else if (temperature > 7'd84 & temperature < 7'd87) begin 
         // temperature is less than 23 but greater than 20 degree
-        heater = 1'b0 ;
-        fan_speed = 2'd1 ;
-        airConditioner = 1'b0 ;
+        fan_speed = 2'd2 ;
       end   
       else if (temperature > 7'd87 & temperature < 7'd90) begin 
         // temperature is greater than 23 but less than 26
-        heater = 1'b0 ;
         fan_speed = 2'd3 ;
         airConditioner = 1'b0 ;
       end    
       else if (temperature > 7'd90 ) begin
         // temperature is greater than 26
-        heater = 1'b0 ;
-        fan_speed = 2'd2 ;  
+        fan_speed = 2'd1 ;  
         airConditioner = 1'b1;    
       end
     end
-    else 
+    else begin
       fan_speed = 2'd0;
       airConditioner = 1'b0;
       heater = 1'b0 ;
+    end
   end
 endmodule
 
@@ -132,11 +134,14 @@ endmodule
 module kitchen(stove_state, chimney) ;
   input stove_state ;
   output reg chimney ;
+  initial begin
+    chimney = 1'b0;
+  end
   always @ (stove_state)
     if(stove_state)
       chimney = 1'b1 ;
     else 
-      chimney <= #60 1'b0 ;  
+      chimney <= #60 1'b0 ;
 endmodule
 
 // Smoke luminosity is of multiple bits as there will be smoke detectors in every room.
