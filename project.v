@@ -119,7 +119,13 @@ endmodule
 module lighting (luminosity, motionSensor, light) ;
   input [2:0] luminosity ;
   input motionSensor ;
-  output light ;
+  output reg light ;
+  always @(*) begin
+    if(luminosity<4 & motionSensor)
+      light = 1'b1;
+    else
+      light = 1'b0;
+  end
 endmodule
 
 // Chimney will turn on when stove is in an active state and turn off after some delay.
@@ -136,14 +142,34 @@ endmodule
 // Smoke luminosity is of multiple bits as there will be smoke detectors in every room.
 module fire_alarm(smoke_detector, alarmEnable) ;
   input [2:0] smoke_detector ;
-  output alarmEnable ;
-endmodule
+  output reg alarmEnable ;
+  initial begin
+    alarmEnable = 1'b0;
+  end
+  always @(smoke_detector) begin
+   if(smoke_detector>0)
+      alarmEnable = 1'b1;
+   end
+  endmodule
 
 // This module will trigger burglar alarm in the respective room whenever the burglar breaks the door or window.
 // Burglar can enter from doors, windows or garage, so we have taken all of them in consideration.
-module burglar_alarm(doorState, windowState, garageState, homeLocked, garageLocked, alarmEnable) ;
+module burglar_alarm(doorState, windowState, garageState, homeLocked, garageLocked, alarmEnable, garageAlarm) ;
   input [2:0] doorState, windowState ;
   input garageState ;
   input homeLocked, garageLocked ;
-  output [2:0] alarmEnable ;
+  output reg [2:0] alarmEnable ;  //for each room we are having an alarm
+  output garageAlarm;
+  assign garageAlarm = garageLocked & garageState;
+  
+  always @(doorState, windowState, homeLocked) begin
+    alarmEnable[0] = (doorState[0] | windowState[0]) & homeLocked;
+    alarmEnable[1] = (doorState[1] | windowState[1]) & homeLocked;
+    alarmEnable[2] = (doorState[2] | windowState[2]) & homeLocked;
+    alarmEnable[3] = (doorState[3] | windowState[3]) & homeLocked;
+    alarmEnable[4] = (doorState[4] | windowState[4]) & homeLocked;
+    alarmEnable[5] = (doorState[5] | windowState[5]) & homeLocked;
+    alarmEnable[6] = (doorState[6] | windowState[6]) & homeLocked;
+    alarmEnable[7] = (doorState[7] | windowState[7]) & homeLocked;
+  end
 endmodule
