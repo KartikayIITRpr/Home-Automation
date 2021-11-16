@@ -72,10 +72,45 @@ endmodule
 // This automated cooling and heating works with temperature and presence of humans as input.
 // It will turn A.C., heater on/off and control fan speed.  
 module airConditioning(temperature, heater, airConditioner, humanDetector, fan_speed) ;
-  input [7:0] temperature ;
+  input [6:0] temperature ;
   input humanDetector ;
-  output heater, airConditioner ;
-  output [1:0] fan_speed ;  
+  output reg heater, airConditioner ;
+  output reg [1:0] fan_speed ; 
+  always @(*) begin
+    if (humanDetector) begin 
+      if(temperature < 7'd74)begin
+        // temperature is less than 10
+        heater = 1'b1 ;
+      end
+      else if (temperature > 7'd74 & temperature < 7'd84) begin 
+        // temperature is less than 20 but greater than 10 
+        heater = 1'b0;
+        fan_speed = 1'b0 ;
+      end
+      else if (temperature > 7'd84 & temperature < 7'd87) begin 
+        // temperature is less than 23 but greater than 20 degree
+        heater = 1'b0 ;
+        fan_speed = 2'd1 ;
+        airConditioner = 1'b0 ;
+      end   
+      else if (temperature > 7'd87 & temperature < 7'd90) begin 
+        // temperature is greater than 23 but less than 26
+        heater = 1'b0 ;
+        fan_speed = 2'd3 ;
+        airConditioner = 1'b0 ;
+      end    
+      else if (temperature > 7'd90 ) begin
+        // temperature is greater than 26
+        heater = 1'b0 ;
+        fan_speed = 2'd2 ;  
+        airConditioner = 1'b1;    
+      end
+    end
+    else 
+      fan_speed = 2'd0;
+      airConditioner = 1'b0;
+      heater = 1'b0 ;
+  end
 endmodule
 
 // It takes input, time and motion of humans, like in night time, when humans are not moving
@@ -90,10 +125,12 @@ endmodule
 // Chimney will turn on when stove is in an active state and turn off after some delay.
 module kitchen(stove_state, chimney) ;
   input stove_state ;
-  output chimney ;
+  output reg chimney ;
   always @ (stove_state)
     if(stove_state)
       chimney = 1'b1 ;
+    else 
+      chimney <= #60 1'b0 ;  
 endmodule
 
 // Smoke luminosity is of multiple bits as there will be smoke detectors in every room.
