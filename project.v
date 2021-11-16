@@ -123,7 +123,7 @@ module lighting (luminosity, motionSensor, light) ;
   input motionSensor ;
   output reg light ;
   always @(*) begin
-    if(luminosity<4 & motionSensor)
+    if(luminosity< 3'd4 & motionSensor)
       light = 1'b1;
     else
       light = 1'b0;
@@ -154,8 +154,10 @@ module fire_alarm(smoke_detector, alarmEnable) ;
   always @(smoke_detector) begin
    if(smoke_detector>0)
       alarmEnable = 1'b1;
+    else 
+      alarmEnable = 1'b0;
    end
-  endmodule
+endmodule
 
 // This module will trigger burglar alarm in the respective room whenever the burglar breaks the door or window.
 // Burglar can enter from doors, windows or garage, so we have taken all of them in consideration.
