@@ -91,6 +91,9 @@ endmodule
 module kitchen(stove_state, chimney) ;
   input stove_state ;
   output chimney ;
+  always @ (stove_state)
+    if(stove_state)
+      chimney = 1'b1 ;
 endmodule
 
 // Smoke luminosity is of multiple bits as there will be smoke detectors in every room.
