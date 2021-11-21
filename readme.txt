@@ -1,19 +1,15 @@
-What is done ???
+In this project we implemented a home automation system with help of verilog. Our project is capable of providing security, appropriate temperature and lighting. We have made a security system which controlls the locks of all doors and windows in the house. The user can unlock the home or garage using a 5-digit password and can also change it using a non changeable unique key. User can set different or same passwords for garage and home. We have also made a burglar alarm system that triggers when any door or window is opened(broken) when the home is locked. The alarm is also triggered when some enters wrong password more than three times. We have also made lighting system that turns on light if luminosity if below a particular limit. There is a air conditioning system that turns on/off heater, AC and fans in each room. Lights and air conditioning of the particular room will turn on only if there is someone present in the room. Presence will be detected by motion detector and human presence detector present in each room. Lights will turn on if there is some movement in the room (will turn off if the person is sleeping) and air conditioning will work if human presence is there. There is also a fire safety system that triggers a fire alarm if smoke is detected anywhere in the house.
 
-1. Module definitions of basic components like multiplexer(both 8 to 1 and 2 to 1) and demultiplexer are added in the code .
+In the project file, there is a master module called smart_home module. This module initiate every other module in it and controls thier inputs and outputs. 
 
-2. There is a main module named 'smart_home'. This module acts as a driver module and controls all other functions of the smart home. All the inputs to other functions are given through smart_home module.
+The checking of password for both home and garage is done using the password_check module. In password check, if the number of times a wrong password is input exceeds 3, then an alarm will ring. If the user has to change the password and he has given the unique key as input for password, then the password will get reset to new password. If the given password is correct, it will unlock the home (note that this will however not unlock the garage and vise versa) The password_check works same for the input for garage.
+ 
+Our air conditioning module will work according to the values of temperature as input. We have assumed the input from the temperature sensor to be biased by 64 units to accomodate negative values of temperature. If the temperature is less than 10 degree celcius, then heater will get switched on, if temperature is between 10 and 20 degree celcius, then none of cooling or heating appliance will work. If temperature is between 20 and 23 degree celcius, then our fan will start with a regulation of 2. If temperature is between 23 and 26, then fan will rotate with a regulation of index 3. With temperature rising above 30 degree celcius, our AC will start. 
 
-3. The work related to password field, including reset password, is completed.
+Lighting module will work on the basis of the luminosity index. If index is less than 4 and we detect a human, then our lights will be switched on. However, if even one of the above two stated conditions fails, our lights will not get switched on. Detection of motion is necessary, so that lights do not get switched on even if luminosity drops below 4. 
 
-4. All module names along with their respective inputs and outputs have been specified. 
+Kitchen module is helpful in maintaining the ventilation of our kitchen. The stove state variable tells whether our stove is being used or not. If stove is being used, then chimney will start working, providing ventilation and it will work even if we stop using stove, for additional 60 seconds and then turns off.
 
-5. Test bench for "password_check" module is done with different scenarios. 
+Fire alarm warns the residents of the smart home as well as neighbours, if there is an outbreak of fire. Initially the alarm is set to an off state. Every time we detect smoke, the fire alarm will start ringing. Smoke detector is of 8 bit because there are 8 rooms, each bit corresponding to a single room. If a bit corresponding to a room is 1, then we have detected smoke.
 
-6. Commented about each modules' purpose to make it easy for the reader or checker to get what we are doing (or attempting to do). 
-
-What needs to be done ???
-
-1. Module definitions for all automations in smart home.
-
-2. Test benches of modules except "password_check" module. 
+If a thief or any unwanted person is trying to enter our smart home, then we have burglar alarm to alert us and our neighbours. If our garage is locked and someone is trying to open it, then the alarm in our garage will ring, alerting us. There 8 alarms in our home, one for each room, because if an intruder tries to enter from a specific room, then alarm present in that room will ring. If we only have a single alarm, then we will not be able to detect the location of the thief. 
