@@ -20,23 +20,33 @@ module smart_home(smokeDetector, doorState, windowState, humanDetector,
                   doorEnable, in_password, change_password, rs_buttonState,
                   e_buttonState, temperature, luminosity, 
                   motionSensor, stove_state, burglar_alarm_enable, unlock, fire_alarm, chimney, garage_alarm,
-                  light, heater, airConditioner, fan_speed, lock_button, garageLocked,garageState) ;
+                  light, heater, airConditioner, fan_speed, lock_button, garageLocked, garageState,
+                  garage_in_password, garage_change_password, garage_rs_button, garage_e_button, garage_lock_button) ;
   input [7:0] smokeDetector, doorState, windowState, humanDetector, motionSensor, lock_button;
   input [2:0] doorEnable, rs_buttonState, e_buttonState;
   input [2:0][16:0] in_password, change_password ;
   input [2:0][2:0] luminosity;
   input [2:0][6:0] temperature ;
-  input garageState, stove_state, garageLocked;
-  output fire_alarm, chimney, garage_alarm; 
-  output reg unlock;
+  input [16:0] garage_in_password, garage_change_password;
+  input garageState, stove_state, garage_rs_button, garage_e_button, garage_lock_button ;
+  output fire_alarm, chimney ; 
+  output reg unlock, garageLocked, garage_alarm;
   output [7:0] light, heater, airConditioner;
   output reg [7:0] burglar_alarm_enable;
   output [7:0][1:0] fan_speed ;
   wire [7:0] burglar_alarm_s;
-  burglar_alarm b (doorState, windowState, garageState, !unlock, garageLocked, burglar_alarm_s, garage_alarm) ;
+  wire garage_alarm_sb;
+  burglar_alarm b (doorState, windowState, garageState, !unlock, garageLocked, burglar_alarm_s, garage_alarm_sb) ;
 
   always @(burglar_alarm_s) begin
-   burglar_alarm_enable = burglar_alarm_s;
+    for (integer i = 0; i<8; i=i+1) begin
+      if (burglar_alarm_s[i])
+        burglar_alarm_enable[i] = 1'b1;
+    end
+  end
+
+  always @(posedge garage_alarm_sb) begin
+    garage_alarm = 1'b1;
   end
 
   kitchen k (stove_state, chimney) ; 
@@ -56,11 +66,14 @@ module smart_home(smokeDetector, doorState, windowState, humanDetector,
   mux_8_16b m2 (doorEnable, change_password, password_change);
   mux_8 m3 (doorEnable, rs_buttonState, buttonState_rs);
   mux_8 m4 (doorEnable, e_buttonState, buttonState_e);
+
   wire unlock_s, alarm_s;
   password_check p (password_in, password_change, buttonState_rs, buttonState_e, unlock_s, alarm_s);
   initial begin
     burglar_alarm_enable <= 8'd0;
     unlock <= 1'b0;
+    garageLocked <= 1'b0;
+    garage_alarm <= 1'b0;
   end
   always @(posedge unlock_s, alarm_s) begin
     if (unlock_s) begin
@@ -77,6 +90,19 @@ module smart_home(smokeDetector, doorState, windowState, humanDetector,
 
   fire_alarm f (smokeDetector, fire_alarm);
   
+  wire garage_unlock_s;
+  password_check pg (garage_in_password, garage_change_password, garage_rs_button, garage_e_button, garage_unlock_s, garage_alarm_s);
+  always @(posedge garage_unlock_s,posedge garage_alarm_s) begin
+    if (garage_unlock_s == 1'b1) begin
+      garageLocked <= 1'b0;
+    end
+    if (garage_alarm_s == 1'b1) begin
+      garage_alarm <= 1'b1;
+    end
+  end
+  always @(posedge garage_lock_button) begin
+    garageLocked = 1'b1;
+  end
 endmodule
 
 // This module checks the password. It also has an option of reset, to reset the password if user forgets it.
@@ -211,10 +237,14 @@ module burglar_alarm(doorState, windowState, garageState, homeLocked, garageLock
   input garageState ;
   input homeLocked, garageLocked ;
   output reg [7:0] alarmEnable ;  //for each room we are having an alarm
-  output garageAlarm;
-  assign garageAlarm = garageLocked & garageState;
+  output reg garageAlarm;  
   initial begin
     alarmEnable <= 8'd0;
+    garageAlarm <= 1'b0;
+  end
+  always @(garageLocked, garageState) begin
+    garageAlarm = garageLocked & garageState;
+    garageAlarm = #1 1'b0;
   end
   always @(doorState, windowState, homeLocked) begin
     alarmEnable[0] = (doorState[0] | windowState[0]) & homeLocked;
@@ -225,5 +255,7 @@ module burglar_alarm(doorState, windowState, garageState, homeLocked, garageLock
     alarmEnable[5] = (doorState[5] | windowState[5]) & homeLocked;
     alarmEnable[6] = (doorState[6] | windowState[6]) & homeLocked;
     alarmEnable[7] = (doorState[7] | windowState[7]) & homeLocked;
+    #1
+    alarmEnable = 8'd0;
   end
 endmodule
