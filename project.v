@@ -1,37 +1,82 @@
-// 16 : 1 multiplexer
-module mux_8(sel, inp, out) ; 
+// 16 : 1 multiplexer (17 bit)
+module mux_8_16b(sel, inp, out) ; 
   input [2:0] sel ;
-  input [7:0] inp ;
-  output out ;
+  input [2:0][16:0] inp ;
+  output [16:0] out ;
   assign out = inp[sel] ;
 endmodule
 
-// 2 : 1 multiplexer
-module mux_2(sel, a, b, out) ;
-  input sel, a, b ;
-  output out ;
-  assign out = (sel) ? a:b ;
-endmodule
-
-// 1 : 16 demultiplexer
-module demux_8(sel, inp, out) ;
+// 16 : 1 multiplexer
+module mux_8(sel, inp, out) ; 
   input [2:0] sel ;
-  input [16:0] inp ;
-  output [7:0][16:0] out ;
+  input [2:0] inp ;
+  output out ;
+  assign out = inp[sel] ;
 endmodule
 
 // This is the main module to control all the automations in the smart home.
 // All inputs will be passed from here.
 module smart_home(smokeDetector, doorState, windowState, humanDetector, 
                   doorEnable, in_password, change_password, rs_buttonState,
-                  e_buttonState, temperature, humanDetector, luminosity, 
-                  motionSensor, stove_state) ;
-  input [2:0] smokeDetector, doorState, windowState, humanDetector, motionSensor ;
-  input [2:0] doorEnable, rs_buttonState, e_buttonState ;
+                  e_buttonState, temperature, luminosity, 
+                  motionSensor, stove_state, burglar_alarm_enable, unlock, fire_alarm, chimney, garage_alarm,
+                  light, heater, airConditioner, fan_speed, lock_button, garageLocked,garageState) ;
+  input [7:0] smokeDetector, doorState, windowState, humanDetector, motionSensor, lock_button;
+  input [2:0] doorEnable, rs_buttonState, e_buttonState;
   input [2:0][16:0] in_password, change_password ;
-  input [2:0][2:0] luminosity ;
-  input [2:0][7:0] temperature ;
-  input garageState, stove_state ;
+  input [2:0][2:0] luminosity;
+  input [2:0][6:0] temperature ;
+  input garageState, stove_state, garageLocked;
+  output fire_alarm, chimney, garage_alarm; 
+  output reg unlock;
+  output [7:0] light, heater, airConditioner;
+  output reg [7:0] burglar_alarm_enable;
+  output [7:0][1:0] fan_speed ;
+  wire [7:0] burglar_alarm_s;
+  burglar_alarm b (doorState, windowState, garageState, !unlock, garageLocked, burglar_alarm_s, garage_alarm) ;
+
+  always @(burglar_alarm_s) begin
+   burglar_alarm_enable = burglar_alarm_s;
+  end
+
+  kitchen k (stove_state, chimney) ; 
+
+  genvar i;
+  generate
+    for (i = 0; i<8; i=i+1) begin
+      airConditioning ac1 ({temperature[i][6], temperature[i][5], temperature[i][4], temperature[i][3], 
+        temperature[i][2], temperature[i][1], temperature[i][0]}, 
+        heater[i], airConditioner[i], humanDetector[i], {fan_speed[i][1], fan_speed[i][0]}) ;
+      lighting l ({luminosity[i][2], luminosity[i][1], luminosity[i][0]}, motionSensor[i], light[i]) ;
+    end
+  endgenerate
+  wire [16:0] password_in, password_change;
+  wire buttonState_e, buttonState_rs;
+  mux_8_16b m1 (doorEnable, in_password, password_in);
+  mux_8_16b m2 (doorEnable, change_password, password_change);
+  mux_8 m3 (doorEnable, rs_buttonState, buttonState_rs);
+  mux_8 m4 (doorEnable, e_buttonState, buttonState_e);
+  wire unlock_s, alarm_s;
+  password_check p (password_in, password_change, buttonState_rs, buttonState_e, unlock_s, alarm_s);
+  initial begin
+    burglar_alarm_enable <= 8'd0;
+    unlock <= 1'b0;
+  end
+  always @(posedge unlock_s, alarm_s) begin
+    if (unlock_s) begin
+      unlock <= 1'b1;
+    end
+    if (alarm_s) begin
+      burglar_alarm_enable[doorEnable] <= 1'b1;
+    end
+  end
+  always @(lock_button) begin
+    if(lock_button > 0)
+      unlock = 1'b0;
+  end
+
+  fire_alarm f (smokeDetector, fire_alarm);
+  
 endmodule
 
 // This module checks the password. It also has an option of reset, to reset the password if user forgets it.
@@ -146,29 +191,31 @@ endmodule
 
 // Smoke luminosity is of multiple bits as there will be smoke detectors in every room.
 module fire_alarm(smoke_detector, alarmEnable) ;
-  input [2:0] smoke_detector ;
+  input [7:0] smoke_detector ;
   output reg alarmEnable ;
   initial begin
     alarmEnable = 1'b0;
   end
   always @(smoke_detector) begin
-   if(smoke_detector>0)
+    if(smoke_detector>0)
       alarmEnable = 1'b1;
     else 
       alarmEnable = 1'b0;
    end
-endmodule
+  endmodule
 
 // This module will trigger burglar alarm in the respective room whenever the burglar breaks the door or window.
 // Burglar can enter from doors, windows or garage, so we have taken all of them in consideration.
 module burglar_alarm(doorState, windowState, garageState, homeLocked, garageLocked, alarmEnable, garageAlarm) ;
-  input [2:0] doorState, windowState ;
+  input [7:0] doorState, windowState ;
   input garageState ;
   input homeLocked, garageLocked ;
-  output reg [2:0] alarmEnable ;  //for each room we are having an alarm
+  output reg [7:0] alarmEnable ;  //for each room we are having an alarm
   output garageAlarm;
   assign garageAlarm = garageLocked & garageState;
-  
+  initial begin
+    alarmEnable <= 8'd0;
+  end
   always @(doorState, windowState, homeLocked) begin
     alarmEnable[0] = (doorState[0] | windowState[0]) & homeLocked;
     alarmEnable[1] = (doorState[1] | windowState[1]) & homeLocked;
