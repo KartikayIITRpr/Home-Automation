@@ -24,9 +24,9 @@ module smart_home(smokeDetector, doorState, windowState, humanDetector,
                   garage_in_password, garage_change_password, garage_rs_button, garage_e_button, garage_lock_button) ;
   input [7:0] smokeDetector, doorState, windowState, humanDetector, motionSensor, lock_button;
   input [2:0] doorEnable, rs_buttonState, e_buttonState;
-  input [2:0][16:0] in_password, change_password ;
-  input [2:0][2:0] luminosity;
-  input [2:0][6:0] temperature ;
+  input [7:0][16:0] in_password, change_password ;
+  input [7:0][2:0] luminosity;
+  input [7:0][6:0] temperature ;
   input [16:0] garage_in_password, garage_change_password;
   input garageState, stove_state, garage_rs_button, garage_e_button, garage_lock_button ;
   output fire_alarm, chimney ; 

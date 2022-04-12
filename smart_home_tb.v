@@ -2,10 +2,10 @@
 module smart_home_tb() ;
     reg [7:0] smokeDetector, doorState, windowState, humanDetector, motionSensor, lock_button;
     reg [2:0] doorEnable, rs_buttonState, e_buttonState ;
-    reg [2:0][16:0] in_password, change_password ;
+    reg [7:0][16:0] in_password, change_password ;
     reg [16:0] garage_change_password, garage_in_password ;
-    reg [2:0][2:0] luminosity;
-    reg [2:0][6:0] temperature ;
+    reg [7:0][2:0] luminosity;
+    reg [7:0][6:0] temperature ;
     reg garageState, stove_state, garage_e_button, garage_lock_button, garage_rs_button ;
     wire unlock, fire_alarm, chimney, garage_alarm, garageLocked; 
     wire [7:0] burglar_alarm_enable, light, heater, airConditioner;
@@ -29,8 +29,8 @@ module smart_home_tb() ;
         motionSensor = 8'd0 ;
         lock_button = 8'd0 ;
         doorEnable = 3'd0 ;
-        luminosity = 9'd0;
-        temperature = 21'd0;
+        luminosity = 24'd0;
+        temperature = 56'd0;
         garageState = 1'b0;
         stove_state = 1'b0;
         smokeDetector = 8'd0;
@@ -179,6 +179,7 @@ module smart_home_tb() ;
         #5
         garage_e_button = 1'b1;
         #5
+        garageState = 1'b1;
         garage_lock_button = 1'b1 ;        
         #5;
     end
@@ -195,11 +196,18 @@ module smart_home_tb() ;
     end
 
     initial begin
-        #200
+        #80
         //garageState = 1'b1;
         doorState[5] = 1'b1;
+        #10
+        doorState[5] = 1'b0;
     end
-
+    initial begin
+        #50
+        windowState[3] = 1'b1;
+        #20
+        windowState[3] = 1'b0;
+    end
 
     initial begin
         $dumpfile("smart_home_tb.vcd");
